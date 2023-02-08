@@ -2,6 +2,7 @@ import json
 import random
 import sys
 import time
+import pickle
 
 from activation_functions import *
 from cost_functions import *
@@ -34,11 +35,11 @@ class Network(object):
         return sortie
 
     def train(self, loader, epochs=1, eta=2,
-              batches_size=3, test_accuracy = False, train_accuracy = False,
-              mini_batch_size = 10):
+              test_accuracy=False, train_accuracy=False,
+              mini_batch_size=20):
 
         train, test = loader()
-        monitor = ([], []) #train, test
+        monitor = ([], [])  # train, test
         start = time.time()
 
         if train_accuracy: monitor[0].append(self.accuracy(train, '(train)'))
@@ -46,7 +47,7 @@ class Network(object):
 
         for epoch in range(epochs):
 
-            train, test = loader()
+            # train, test = loader()
             n_train = len(train)
             print(f'Epoch {epoch + 1} started...')
 
@@ -54,8 +55,13 @@ class Network(object):
             batches = [
                 train[k:k + mini_batch_size]
                 for k in range(0, n_train, mini_batch_size)]
+
+            monitor_batch = 0
             for batch in batches:
+                if monitor_batch % 100 == 0:
+                    print(monitor_batch)
                 self.train_batch(batch, eta)
+                monitor_batch += 1
             print(f"\nEntrainement epoch {epoch + 1} fini")
             print(f"Only required {time.time() - start:.2f}s")
 
@@ -77,17 +83,26 @@ class Network(object):
             layer.backpropagation_update(eta, batch_size)
             layer.reset_backpropagation()
 
-    def accuracy(self, data, add_str = ''):
+    def accuracy(self, data, add_str=''):
         """
         renvoie (nombre juste, nombre total)
         """
+        print('Evaluating accuracy...')
         results = [(np.argmax(self.feedforward(x)), np.argmax(y))
-                    for (x, y) in data]
-        print(len(results))
+                   for (x, y) in data]
         juste, total = sum(int(x == y) for (x, y) in results), len(results)
-        #print(results)
-        print(f"Accuracy: {juste/total:.4%} {add_str}")
-        return juste
+        # print(results)
+        print(f"Accuracy: {juste}/{total} ou {juste / total:.4%} {add_str}")
+        return juste, total
+
+    def save(self, nom):
+        """"
+        Sauvegardes sous ..\network\filename
+        """
+        with open('../networks/' + nom, "wb") as f:
+            pickle.dump(self, f)
+            f.close()
+        print(f'network {nom} saved')
 
     def total_cost(self, data, lmbda, test_data=False):
         """
@@ -100,9 +115,18 @@ class Network(object):
                 y = int_to_vect(y, self.output_size)
             cost += self.cost.fn(output, y) / len(data)
         # cost += 0.5*(lmbda/len(data))*sum(
-        #    np.linalg.norm(w)**2 for w in self.weights)
+        # np.linalg.norm(w)**2 for w in self.weights)
         return cost
 
+def load(nom):
+    """
+    Charge un reseau
+    """
+    with open("../networks/" + nom, "rb") as f:
+        net = pickle.load(f)
+        f.close()
+        print(f'Network {nom} loaded!')
+        return net
 
 ####Fonctions randoms
 def int_to_vect(j, size):
