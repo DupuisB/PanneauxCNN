@@ -56,12 +56,12 @@ class Network(object):
                 train[k:k + mini_batch_size]
                 for k in range(0, n_train, mini_batch_size)]
 
-            monitor_batch = 0
+            monitor_batch = 0 #
             for batch in batches:
-                if monitor_batch % 100 == 0:
-                    print(monitor_batch)
+                if monitor_batch % 100 == 0: #
+                    print(monitor_batch) #
                 self.train_batch(batch, eta)
-                monitor_batch += 1
+                monitor_batch += 1 #
             print(f"\nEntrainement epoch {epoch + 1} fini")
             print(f"Only required {time.time() - start:.2f}s")
 

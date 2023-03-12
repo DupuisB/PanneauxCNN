@@ -1,4 +1,5 @@
 import pickle
+import random
 import time
 import numpy as np
 from PIL import Image
@@ -20,6 +21,22 @@ def pano_loader():
     print('data loaded')
     return train_inputs, test_inputs
 
+def pano_loader_small():
+    '''train, test en format [(entree), (sortie)] nump array, seulement 1000 images d'entrainements, 300 de test'''
+    '''train, test en format [(entree), (sortie)] nump array'''
+    print('loading data')
+    with open(f'../data/train_inputs_64', 'rb') as f:
+        train_inputs = pickle.load(f)
+    f.close()
+    with open(f'../data/test_inputs_64', 'rb') as f:
+        test_inputs = pickle.load(f)
+    f.close()
+    print('data loaded')
+    random.seed('abcd')
+    random.shuffle(train_inputs)
+    random.seed('bcdf')
+    random.shuffle(test_inputs)
+    return train_inputs[:1000], test_inputs[:300]
 
 def vectorized_result(length, j):
     e = np.zeros((length, 1))

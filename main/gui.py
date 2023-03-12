@@ -12,10 +12,11 @@ import tkinter.ttk as ttk
 from tkinter import filedialog as fd
 from PIL import ImageTk, Image
 
+
+
 class Software(object):
 
-    def __init__(self, network, loader, background='#FFEFDB', size='1280x720', windows_title='CNN - Dupuis Benjamin'):
-
+    def __init__(self, network, loader, background='#FFEFDB', size='1180x680', windows_title='CNN - Dupuis Benjamin'):
         self.loader = loader
         self.net = network
         self.loader = loader
@@ -33,8 +34,7 @@ class Software(object):
         self.root['padx'] = 10
         self.root['pady'] = 10
 
-
-
+        self.hauteurs = [20]
 
         # Load/Save frame
         self.networkFrame = tk.LabelFrame(self.root, text="Choose Network", relief=tk.RIDGE, bg=self.back)
@@ -70,7 +70,6 @@ class Software(object):
         self.createTK = tk.Button(self.networkFrame, text='Create', bg=self.back, font=self.font, command=self.create)
         self.createTK.grid(row=5, column=1, padx=10, pady=10)
 
-
         # Instructions
         self.text = tk.LabelFrame(self.root, text="Instructions", relief=tk.RIDGE, bg=self.back)
         self.text.grid(row=2, column=1)
@@ -79,10 +78,7 @@ class Software(object):
                                  "", font=self.font, bg=self.back).grid(row=4, column=1,
                                                                         pady=10, padx=10)
 
-
-
-
-        # Settings frame
+        # Settings frame (parametres d'entrainement)
         self.settingsFrame = tk.LabelFrame(self.root, text="Paramètres entrainement", relief=tk.RIDGE, bg=self.back)
         self.settingsFrame.grid(row=1, column=2)
 
@@ -106,8 +102,7 @@ class Software(object):
         self.eta.insert(0, '3.0')
         self.eta.grid(row=3, column=2, padx=10, pady=10)
 
-
-        # Train frame
+        # Entrainement/Evaluation frame
         self.trainFrame = tk.LabelFrame(self.root, text="Entrainement/Evaluation", relief=tk.RIDGE, bg=self.back)
         self.trainFrame.grid(row=2, column=2)
 
@@ -132,20 +127,18 @@ class Software(object):
                                      command=self.eval)
         self.eval_button.grid(row=4, column=1, padx=10, pady=10)
 
-
-
-
         # Image frame
         self.imageFrame = tk.LabelFrame(self.root, text="Image", relief=tk.RIDGE, bg=self.back)
         self.imageFrame.grid(row=1, column=3, padx=5)
 
-        self.image = Image.open("C:/Users/benyo/Desktop/a/Images/fond.png").resize((224, 224), resample=0)
+        self.image = Image.open("C:/Users/benyo/PycharmProjects/PanneauxCNN/data/EuDataset/classes/001.ppm").resize(
+            (224, 224), resample=0)
         self.image = self.image.convert('RGB')
         self.imgDisplayed = ImageTk.PhotoImage(image=self.image)
-        self.Image = tk.Label(self.imageFrame, image=self.imgDisplayed)
-        self.Image.grid(row=1, column=1, padx=5)
+        self.imageTK = tk.Label(self.imageFrame, image=self.imgDisplayed)
+        self.imageTK.grid(row=1, column=1, padx=5)
 
-        #Output frame
+        # Output frame (sortie, / resultat)
         self.outputFrame = tk.LabelFrame(self.root, text="Output", relief=tk.RIDGE, bg=self.back)
         self.outputFrame.grid(row=2, column=3)
         self.output = tk.Label(self.outputFrame, text='None')
@@ -163,15 +156,21 @@ class Software(object):
                                      command=self.loadRandom)
         self.randomImage.grid(row=2, column=1, padx=10, pady=10)
 
-
-
-
         # Console test
+        self.consoleFrame = tk.LabelFrame(self.root, text="Console", relief=tk.RIDGE, bg=self.back)
+        self.consoleFrame.grid(row=1, column=4, padx=5)
         yDefilB = tk.Scrollbar(self.root, orient='vertical')
         yDefilB.grid(row=1, column=5, sticky='ns')
-        self.consoleTK = tk.Listbox(self.root, font=self.font, yscrollcommand=yDefilB.set)
-        self.consoleTK.grid(row=1, column=4, sticky='ns', pady=5)
+        self.consoleTK = tk.Listbox(self.consoleFrame, font=self.font, yscrollcommand=yDefilB.set, height=self.hauteurs[0])
+        self.consoleTK.grid(row=1, column=1, sticky='ns', pady=5)
         yDefilB['command'] = self.consoleTK.yview
+
+        # Close window
+        self.closeFrame = tk.LabelFrame(self.root, text="Close", relief=tk.RIDGE, bg=self.back)
+        self.closeFrame.grid(row=2, column=4)
+        self.close_button = tk.Button(self.closeFrame, text='Close', bg=self.back, font=self.font,
+                                      command=self.closeWindow)
+        self.close_button.grid(row=1, column=1, padx=10, pady=10)
 
         # Lancement
         self.root.mainloop()
@@ -184,6 +183,7 @@ class Software(object):
         return self.networkname.get()
 
     def getLoader(self):
+        print(self.loaderTK.get())
         return eval(self.loaderTK.get())
 
     def getCost(self):
@@ -211,7 +211,7 @@ class Software(object):
     def updateImage(self, image):
         self.image = image
         self.imgDisplayed = ImageTk.PhotoImage(image=self.image.resize((224, 224)))
-        self.Image.configure(image=self.imgDisplayed)
+        self.imageTK.configure(image=self.imgDisplayed)
 
     def getImage(self):
         filetypes = (
@@ -247,9 +247,9 @@ class Software(object):
         for layer in self.net.layers:
             self.networkTK.insert(tk.END, '\n' + layer.name())
 
-
     def train(self):
         train_retour = self.net.train(loader=self.getLoader())
+        return train_retour
 
     def eval(self):
         test_data, train_data = self.loader()
@@ -261,4 +261,4 @@ class Software(object):
 
 test = Software(network=network.Network(
     layers=[Reshape((64, 64, 3), (64 * 64 * 3, 1)), Dense(64 * 64 * 3, 256, sigmoid), Dense(256, 164, sigmoid)]),
-                loader=pano_loader)
+    loader=pano_loader)

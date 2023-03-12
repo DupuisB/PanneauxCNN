@@ -77,7 +77,7 @@ def load_data_wrapper2():
     test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
     test_results = [vectorized_result(y) for y in te_d[1]]
     test_data = zip(test_inputs, test_results)
-    return training_data, test_data
+    return list(training_data), list(test_data)
 
 def load_data_next():
     """listes de couples (vect(entree), vect(voulu)), mais image format"""
@@ -88,7 +88,7 @@ def load_data_next():
     test_inputs = [np.reshape(x, (28,28,1)) for x in te_d[0]]
     test_results = [vectorized_result(y) for y in te_d[1]]
     test_data = zip(test_inputs, test_results)
-    return training_data, test_data
+    return list(training_data), list(test_data)
 
 
 def vectorized_result(j):
@@ -99,6 +99,3 @@ def vectorized_result(j):
     e = np.zeros((10, 1))
     e[j] = 1.0
     return e
-
-test, train = load_data()
-print(type(test))
