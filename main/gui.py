@@ -13,13 +13,13 @@ from tkinter import filedialog as fd
 from PIL import ImageTk, Image
 
 
-
 class Software(object):
 
     def __init__(self, network, loader, background='#FFEFDB', size='1180x680', windows_title='CNN - Dupuis Benjamin'):
         self.loader = loader
         self.net = network
         self.loader = loader
+        self.data = None
 
         self.title = windows_title
         self.back = background
@@ -123,9 +123,14 @@ class Software(object):
                                       command=self.train)
         self.train_button.grid(row=2, column=1, padx=10, pady=10)
 
-        self.eval_button = tk.Button(self.trainFrame, text='Eval Network', bg=self.back, font=self.font,
-                                     command=self.eval)
-        self.eval_button.grid(row=4, column=1, padx=10, pady=10)
+        self.eval_train_button = tk.Button(self.trainFrame, text='Eval training', bg=self.back, font=self.font,
+                                           command=self.eval_train)
+        self.eval_train_button.grid(row=4, column=1, padx=10, pady=10)
+
+        self.eval_test_button = tk.Button(self.trainFrame, text='Eval testing', bg=self.back, font=self.font,
+                                          command=self.eval_test)
+        self.eval_test_button.grid(row=5, column=1, padx=10, pady=10)
+
 
         # Image frame
         self.imageFrame = tk.LabelFrame(self.root, text="Image", relief=tk.RIDGE, bg=self.back)
@@ -144,9 +149,9 @@ class Software(object):
         self.output = tk.Label(self.outputFrame, text='None')
         self.output.grid(row=1, column=1)
 
-        self.eval_button = tk.Button(self.imageFrame, text='Feedforward Image', bg=self.back, font=self.font,
-                                     command=self.feedforward)
-        self.eval_button.grid(row=4, column=1, padx=10, pady=10)
+        self.eval_train_button = tk.Button(self.imageFrame, text='Feedforward Image', bg=self.back, font=self.font,
+                                           command=self.feedforward)
+        self.eval_train_button.grid(row=4, column=1, padx=10, pady=10)
 
         self.loadImage = tk.Button(self.imageFrame, text='Load Image', bg=self.back, font=self.font,
                                    command=self.getImage)
@@ -161,7 +166,8 @@ class Software(object):
         self.consoleFrame.grid(row=1, column=4, padx=5)
         yDefilB = tk.Scrollbar(self.root, orient='vertical')
         yDefilB.grid(row=1, column=5, sticky='ns')
-        self.consoleTK = tk.Listbox(self.consoleFrame, font=self.font, yscrollcommand=yDefilB.set, height=self.hauteurs[0])
+        self.consoleTK = tk.Listbox(self.consoleFrame, font=self.font, yscrollcommand=yDefilB.set,
+                                    height=self.hauteurs[0])
         self.consoleTK.grid(row=1, column=1, sticky='ns', pady=5)
         yDefilB['command'] = self.consoleTK.yview
 
@@ -206,7 +212,7 @@ class Software(object):
         return float(self.eta.get())
 
     def getMonitoring(self):
-        return self.eval_acc, self.train_acc
+        return self.train_acc, self.eval_acc
 
     def updateImage(self, image):
         self.image = image
@@ -215,21 +221,24 @@ class Software(object):
 
     def getImage(self):
         filetypes = (
-            ('image files', '*.png'),
+            ('image files', '*.ppm'),
         )
         path = fd.askopenfilename(filetypes=filetypes)
         self.updateImage(Image.open(path))
 
     def loadRandom(self):
-        train, test = self.loader()
-        tableau = random.choice(list(test))[0]
+        if self.data is None:
+            self.data = self.loader()
+            self.data = [list(x) for x in self.data]
+        tableau = random.choice(self.data[0])[0]
         image = Image.fromarray(tableau)
         self.updateImage(image)
 
     def feedforward(self):
-        print(self.image.convert('RGB').mode)
-        ff = self.net.feedforward(np.moveaxis(np.asarray(self.image), 0, -1))
-        self.output['text'] = f'{ff} \n \nChiffre Probable: \n{np.argmax(ff)}'
+        print('ff...')
+        ff = self.net.feedforwardClasse(np.asarray(self.image))
+        self.log(f'Probable: {ff}')
+        self.output['text'] = f'Prévision: \n{ff}'
 
     def create(self):
         self.net = network.Network(layers=self.getNetwork(), cost=self.getCost())
@@ -242,16 +251,22 @@ class Software(object):
     def load(self):
         name = self.getName()
         self.net = network.load(name)
-        self.networkTK.delete("1.0", tk.END)
+        self.networkTK.delete("0.0", tk.END)
 
         for layer in self.net.layers:
             self.networkTK.insert(tk.END, '\n' + layer.name())
 
     def train(self):
-        train_retour = self.net.train(loader=self.getLoader())
+        train_retour = self.net.train(loader=self.getLoader(), epochs=self.getEpochs(),
+                                      mini_batch_size=self.getMiniSize(), eta=self.getEta(),
+                                      train_accuracy=self.getMonitoring()[0], test_accuracy=self.getMonitoring()[1])
         return train_retour
 
-    def eval(self):
+    def eval_train(self):
+        test_data, train_data = self.loader()
+        self.net.accuracy(train_data, '(test)')
+
+    def eval_test(self):
         test_data, train_data = self.loader()
         self.net.accuracy(test_data, '(test)')
 
@@ -259,6 +274,20 @@ class Software(object):
         self.root.destroy()
 
 
-test = Software(network=network.Network(
-    layers=[Reshape((64, 64, 3), (64 * 64 * 3, 1)), Dense(64 * 64 * 3, 256, sigmoid), Dense(256, 164, sigmoid)]),
-    loader=pano_loader)
+# test = Software(network=network.Network(
+#    layers=[Maxpooling((64, 64, 3), 16), Convolution((4, 4, 3), 3, 5, sigmoid), Reshape((2, 2, 5), (2*2*5, 1)), Dense(20, 164, sigmoid)]),
+#    loader=pano_loader)
+
+# test = Software(network=network.Network(layers=[Maxpooling((64, 64, 3), 2), Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (5 * 29 * 29, 1)),
+#            Dense(29*29* 5, 512, sigmoid), Dense(512, 164, sigmoid)]), loader=pano_loader_small)
+
+
+# test = Software(
+#   network=network.Network(layers=[Convolution((64, 64, 3), 4, 5, sigmoid), Reshape((61, 61, 5), (5 * 61 * 61, 1)),
+#                                  Dense(61 * 61 * 5, 164, sigmoid)]),
+# loader=pano_loader_medium)
+
+test = Software(
+    network=network.Network(layers=[Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (29 * 29 * 5, 1)),
+                                    Dense(29 * 29 * 5, 164, sigmoid)]),
+    loader=pano_loader_medium_32)

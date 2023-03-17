@@ -5,38 +5,41 @@ import numpy as np
 from PIL import Image
 import os
 
-
 # avg size: 44*42
 # 60*60: 18860/99384 + grand
 
-def pano_loader():
+def pano_loader(x, size_train=None, size_test=None):
     '''train, test en format [(entree), (sortie)] nump array'''
     print('loading data')
-    with open(f'../data/train_inputs_64', 'rb') as f:
+    with open(f'../data/train_inputs_{x}', 'rb') as f:
         train_inputs = pickle.load(f)
     f.close()
-    with open(f'../data/test_inputs_64', 'rb') as f:
+    with open(f'../data/test_inputs_{x}', 'rb') as f:
         test_inputs = pickle.load(f)
     f.close()
+    if size_train:
+        random.shuffle(train_inputs)
+        train_inputs = train_inputs[:size_train]
+    if size_test:
+        random.shuffle(test_inputs)
+        test_inputs = test_inputs[:size_test]
     print('data loaded')
     return train_inputs, test_inputs
 
-def pano_loader_small():
-    '''train, test en format [(entree), (sortie)] nump array, seulement 1000 images d'entrainements, 300 de test'''
-    '''train, test en format [(entree), (sortie)] nump array'''
-    print('loading data')
-    with open(f'../data/train_inputs_64', 'rb') as f:
-        train_inputs = pickle.load(f)
-    f.close()
-    with open(f'../data/test_inputs_64', 'rb') as f:
-        test_inputs = pickle.load(f)
-    f.close()
-    print('data loaded')
-    random.seed('abcd')
-    random.shuffle(train_inputs)
-    random.seed('bcdf')
-    random.shuffle(test_inputs)
-    return train_inputs[:1000], test_inputs[:300]
+def pano_loader_64():
+    return pano_loader(64)
+def pano_loader_32():
+    return pano_loader(32)
+
+def pano_loader_small_64():
+    return pano_loader(64, size_train=1000, size_test=300)
+def pano_loader_small_32():
+    return pano_loader(32, size_train=1000, size_test=300)
+
+def pano_loader_medium_64():
+    return pano_loader(64, size_train=10000, size_test=3000)
+def pano_loader_medium_32():
+    return pano_loader(32, size_train=10000, size_test=3000)
 
 def vectorized_result(length, j):
     e = np.zeros((length, 1))
@@ -68,10 +71,10 @@ def new_data(name):
 
         for image in train_dir:
         # Choisir le format, convert('L') noir et blanc, resize normalise la forme
-            train_inputs.append((np.asarray(Image.open(f"{path_train}{file_name}/{image}").resize((64, 64))), sortie))
+            train_inputs.append((np.asarray(Image.open(f"{path_train}{file_name}/{image}").resize((32, 32))), sortie))
 
         for image in test_dir:
-            test_inputs.append((np.asarray(Image.open(f"{path_test}{file_name}/{image}").resize((64, 64))), sortie))
+            test_inputs.append((np.asarray(Image.open(f"{path_test}{file_name}/{image}").resize((32, 32))), sortie))
 
     print('Fin de la conversion, debut de l\'enregistrement...')
 

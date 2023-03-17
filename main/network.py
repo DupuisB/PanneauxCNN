@@ -7,6 +7,7 @@ import pickle
 from activation_functions import *
 from cost_functions import *
 from layers import *
+from data.classes import classes
 
 import numpy as np
 
@@ -34,6 +35,13 @@ class Network(object):
             sortie = layer.feedforward(sortie)
         return sortie
 
+    def feedforwardClasse(self, entree):
+        """
+        Renvoie la classe pour un vecteur d'entree a
+        """
+        sortie = self.feedforward(entree)
+        return classes()[np.argmax(sortie)]
+
     def train(self, loader, epochs=1, eta=2,
               test_accuracy=False, train_accuracy=False,
               mini_batch_size=20):
@@ -58,8 +66,8 @@ class Network(object):
 
             monitor_batch = 0 #
             for batch in batches:
-                if monitor_batch % 100 == 0: #
-                    print(monitor_batch) #
+                if monitor_batch % 10 == 0: #
+                    print(f'monitor_batch: {monitor_batch}') #
                 self.train_batch(batch, eta)
                 monitor_batch += 1 #
             print(f"\nEntrainement epoch {epoch + 1} fini")
@@ -85,7 +93,7 @@ class Network(object):
 
     def accuracy(self, data, add_str=''):
         """
-        renvoie (nombre juste, nombre total)
+        renvoie (nombre juste, nombre total), data deja decompacte
         """
         print('Evaluating accuracy...')
         results = [(np.argmax(self.feedforward(x)), np.argmax(y))

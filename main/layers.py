@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import signal
 from activation_functions import *
+import time
+from data.classes import classes
 
 
 # @ = np.dot, * = np.multiply (hadamart)
@@ -12,15 +14,13 @@ class Layer():
     def reset_backpropagation(self):
         pass
 
-    pass
-
 
 class Dense(Layer):
-    def __init__(self, dim_entree, dim_sortie, func):
-        self.dim_entree, self.dim_sortie = dim_entree, dim_sortie
+    def __init__(self, entree_dim, sortie_dim, func):
+        self.entree_dim, self.dim_sortie = entree_dim, sortie_dim
         self.func = func
-        self.poids = np.random.randn(dim_sortie, dim_entree)
-        self.biais = np.random.randn(dim_sortie, 1)
+        self.poids = np.random.randn(sortie_dim, entree_dim)
+        self.biais = np.random.randn(sortie_dim, 1)
         self.poids_batch = np.zeros(self.poids.shape)
         self.biais_batch = np.zeros(self.biais.shape)
 
@@ -30,8 +30,8 @@ class Dense(Layer):
         return self.sortie
 
     def backpropagation(self, eta, nabla_sortie):  # reset indique fin du batch
-        derivee_activation = self.func.prime(
-            self.sortie)  # % fonction d'activation je remet self.Sortie pcq autcun sens mais amrchait ?
+        #st = time.time()
+        derivee_activation = self.func.prime(self.sortie)
         nabla_sortie = nabla_sortie * derivee_activation  # fait la derivee de la fct d'activation
         nabla_poids = (nabla_sortie @ self.entree.T)
         nabla_entree = (self.poids.T @ nabla_sortie)  # Jacobienne
@@ -39,6 +39,8 @@ class Dense(Layer):
         # self.biais -= eta * nabla_sortie
         self.poids_batch += eta * nabla_poids
         self.biais_batch += eta * nabla_sortie
+        #print(time.time() - st)
+        #print('dens\n')
         return nabla_entree
 
     def backpropagation_update(self, eta, batch_size):
@@ -50,19 +52,19 @@ class Dense(Layer):
         self.biais_batch = np.zeros(self.biais.shape)
 
     def name(self):
-        return f"Dense({self.dim_entree}, {self.dim_sortie}, {self.func.__name__})"
+        return f"Dense({self.entree_dim}, {self.dim_sortie}, {self.func.__name__})"
 
 
 class Convolution(Layer):
 
-    def __init__(self, img_dims, kernel_cote, sortie_prof, func):
+    def __init__(self, img_dim, kernel_cote, sortie_prof, func):
         self.func = func
-        self.entree_dims = img_dims
+        self.entree_dims = img_dim
         self.entree_haut, self.entree_larg, self.entree_prof = self.entree_dims
         self.sortie_dims = (self.entree_haut - kernel_cote + 1, self.entree_larg - kernel_cote + 1, sortie_prof)
         self.sortie_prof = sortie_prof
-        self.filtre_dims = (kernel_cote, kernel_cote, self.entree_prof, sortie_prof)
-        self.filtre = np.random.rand(*self.filtre_dims)
+        self.filtre_dim = (kernel_cote, kernel_cote, self.entree_prof, sortie_prof)
+        self.filtre = np.random.rand(*self.filtre_dim)
         self.biais = np.random.rand(*self.sortie_dims)
         self.filtre_batch = np.zeros(self.filtre.shape)
         self.biais_batch = np.zeros(self.biais.shape)
@@ -79,10 +81,10 @@ class Convolution(Layer):
         return self.sortie
 
     def backpropagation(self, eta, nabla_sortie):
-        derivee_activation = self.func.prime(
-            self.sortie)  # % fonction d'activation je remet self.Sortie pcq autcun sens mais amrchait ?
+        #st = time.time()
+        derivee_activation = self.func.prime(self.sortie)
         nabla_sortie = nabla_sortie * derivee_activation
-        nabla_filtre = np.zeros(self.filtre_dims)
+        nabla_filtre = np.zeros(self.filtre_dim)
         nabla_entree = np.zeros(self.entree_dims)
 
         for i in range(self.sortie_prof):
@@ -93,10 +95,12 @@ class Convolution(Layer):
                 # nabla_entree[j] += np.convolve(nabla_sortie[i], self.filtre[i], mode='full')
         self.filtre_batch += nabla_filtre
         self.biais_batch += nabla_sortie
+        #print(time.time() - st)
+        #print('conv\n')
         return nabla_entree
 
     def name(self):
-        return f"Convolution({self.entree_dims}, {self.filtre_dims[0]}, {self.sortie_prof}, {self.func.__name__})"
+        return f"Convolution({self.entree_dims}, {self.filtre_dim[0]}, {self.sortie_prof}, {self.func.__name__})"
 
     def backpropagation_update(self, eta, batch_size):
         self.filtre -= eta * self.filtre_batch / batch_size
@@ -143,43 +147,42 @@ class Softmax(Layer):
 
 
 class Maxpooling():
-    """filtre carre, cote*cote"""
+    """filtre carre, cote*cote, aucun parametre (donc rien a update en backprop), filtre_cote divise la hauteur ET la largeur"""
 
-    def __init__(self, entree_dim, filtre_cote, stride):
+    def __init__(self, entree_dim, filtre_cote):
         self.entree_haut, self.entree_larg, self.entree_prof = entree_dim
         self.entree_dim = entree_dim
         self.filtre_cote = filtre_cote
-        self.stride = stride
-        self.sortie_haut = int(1 + (self.entree_haut - self.filtre_cote) / stride)
-        self.sortie_larg = int(1 + (self.entree_larg - self.filtre_cote) / stride)
+        self.sortie_haut = self.entree_haut // self.filtre_cote
+        self.sortie_larg = self.entree_larg // self.filtre_cote
         self.sortie_prof = self.entree_prof
 
     def feedforward(self, entree):
         self.entree = entree
-        sortie = np.zeros((self.sortie_prof, self.sortie_haut, self.sortie_larg))
-        stride = self.stride
-        for c in range(self.sortie_prof):
-            for i in range(self.sortie_haut):
-                for j in range(self.sortie_larg):
-                    sortie[c, i, j] = np.max(
-                        entree[c, i * stride: i * stride + self.filtre_cote, j * stride: j * stride + self.filtre_cote])
+        cote = self.filtre_cote
+        sortie = np.zeros((self.sortie_haut, self.sortie_larg, self.sortie_prof))
+        for couche in range(self.sortie_prof):
+            for y in range(self.sortie_haut):
+                for x in range(self.sortie_larg):
+                    sortie[x, y, couche] = np.max(entree[y * cote: (y + 1) * cote, x * cote: (x + 1) * cote, couche])
         return sortie
 
     def backpropagation(self, grad_sortie, eta):
-        grad_entree = np.zeros((self.entree_prof, self.entree_haut, self.entree_larg))
+        grad_entree = np.zeros((self.entree_haut, self.entree_larg, self.entree_prof))
         entree = self.entree
-        stride = self.stride
-        for c in range(self.sortie_prof):
-            for i in range(self.sortie_haut):
-                for j in range(self.sortie_larg):
-                    intermediaire = entree[c, i * stride: i * stride + self.filtre_cote,
-                                    j * stride: j * stride + self.filtre_cote]
-                    i_max, j_max = np.where(np.max(intermediaire) == intermediaire)
-                    i_max, j_max = i_max[0], j_max[0]
-                    grad_entree[c, i * stride: i * stride + self.filtre_cote,
-                    j * stride: j * stride + self.filtre_cote][
-                        i_max, j_max] = grad_sortie[c, i, j]
+        cote = self.filtre_cote
+        for couche in range(self.sortie_prof):
+            for x in range(self.sortie_larg):  # j
+                for y in range(self.sortie_haut):
+                    origine = entree[x * cote: (x + 1) * cote, y * cote: (y + 1) * cote, couche]
+                    x_max, y_max = np.where(np.max(origine) == origine)
+                    x_max, y_max = x_max[0], y_max[0]
+                    grad_entree[x * cote: (x + 1) * cote, y * cote: (y + 1) * cote, couche][x_max, y_max] = grad_sortie[
+                        x, y, couche]
         return grad_entree
+
+    def name(self):
+        return f"Maxpooling({self.entree_dim}, {self.filtre_cote})"
 
 
 class Greyed(Layer):
