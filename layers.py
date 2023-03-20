@@ -1,8 +1,8 @@
 import numpy as np
 from scipy import signal
-from activation_functions import *
+from utils.activation_functions import *
 import time
-from data.classes import classes
+from data.classes import classes_fr
 
 
 # @ = np.dot, * = np.multiply (hadamart)

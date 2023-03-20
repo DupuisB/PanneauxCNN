@@ -1,4 +1,4 @@
-def classes():
+def classes_fr():
     dico = {
         0: "Virage à droite",
         1: "Virage à gauche",
@@ -167,7 +167,7 @@ def classes():
     }
     return dico
 
-def dico_anglais():
+def classes_en():
     dico = {
         1: "Right bend",
         2: "Left bend",

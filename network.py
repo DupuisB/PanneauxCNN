@@ -4,10 +4,10 @@ import sys
 import time
 import pickle
 
-from activation_functions import *
-from cost_functions import *
+from utils.activation_functions import *
+from utils.cost_functions import *
 from layers import *
-from data.classes import classes
+from data.classes import classes_fr
 
 import numpy as np
 
@@ -40,7 +40,7 @@ class Network(object):
         Renvoie la classe pour un vecteur d'entree a
         """
         sortie = self.feedforward(entree)
-        return classes()[np.argmax(sortie)]
+        return classes_fr()[np.argmax(sortie)]
 
     def train(self, loader, epochs=1, eta=2,
               test_accuracy=False, train_accuracy=False,
@@ -66,7 +66,7 @@ class Network(object):
 
             monitor_batch = 0 #
             for batch in batches:
-                if monitor_batch % 10 == 0: #
+                if monitor_batch % 100 == 0: #
                     print(f'monitor_batch: {monitor_batch}') #
                 self.train_batch(batch, eta)
                 monitor_batch += 1 #
@@ -107,7 +107,7 @@ class Network(object):
         """"
         Sauvegardes sous ..\network\filename
         """
-        with open('../networks/' + nom, "wb") as f:
+        with open('./networks/' + nom, "wb") as f:
             pickle.dump(self, f)
             f.close()
         print(f'network {nom} saved')
@@ -130,7 +130,7 @@ def load(nom):
     """
     Charge un reseau
     """
-    with open("../networks/" + nom, "rb") as f:
+    with open("./networks/" + nom, "rb") as f:
         net = pickle.load(f)
         f.close()
         print(f'Network {nom} loaded!')

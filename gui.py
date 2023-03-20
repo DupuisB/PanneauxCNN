@@ -3,9 +3,9 @@ import random
 import network
 from loaders.mnist_loader import *
 from loaders.pano_loader import *
-from activation_functions import *
+from utils.activation_functions import *
 from layers import *
-from cost_functions import *
+from utils.cost_functions import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -290,4 +290,4 @@ class Software(object):
 test = Software(
     network=network.Network(layers=[Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (29 * 29 * 5, 1)),
                                     Dense(29 * 29 * 5, 164, sigmoid)]),
-    loader=pano_loader_medium_32)
+    loader=pano_loader_32)
