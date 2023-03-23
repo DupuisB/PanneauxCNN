@@ -15,10 +15,8 @@ from PIL import ImageTk, Image
 
 class Software(object):
 
-    def __init__(self, network, loader, background='#FFEFDB', size='1180x680', windows_title='CNN - Dupuis Benjamin'):
-        self.loader = loader
+    def __init__(self, network, background='#FFEFDB', size='1180x680', windows_title='CNN - Dupuis Benjamin'):
         self.net = network
-        self.loader = loader
         self.data = None
 
         self.title = windows_title
@@ -55,7 +53,7 @@ class Software(object):
         tk.Label(self.networkFrame, text="Data Loader", font=self.font, bg=self.back).grid(row=3, column=1, padx=10,
                                                                                            pady=10)
         self.loaderTK = tk.Entry(self.networkFrame)
-        self.loaderTK.insert(0, loader.__name__)
+        self.loaderTK.insert(0, self.net.loader.__name__)
         self.loaderTK.grid(row=3, column=2, padx=10, pady=10)
 
         self.save = tk.Button(self.networkFrame, text='Save as name', bg=self.back, font=self.font, command=self.save)
@@ -136,11 +134,7 @@ class Software(object):
         self.imageFrame = tk.LabelFrame(self.root, text="Image", relief=tk.RIDGE, bg=self.back)
         self.imageFrame.grid(row=1, column=3, padx=5)
 
-        self.image = Image.open("C:/Users/benyo/PycharmProjects/PanneauxCNN/data/EuDataset/classes/001.ppm").resize(
-            (224, 224), resample=0)
-        self.image = self.image.convert('RGB')
-        self.imgDisplayed = ImageTk.PhotoImage(image=self.image)
-        self.imageTK = tk.Label(self.imageFrame, image=self.imgDisplayed)
+        self.imageTK = tk.Label(self.imageFrame)
         self.imageTK.grid(row=1, column=1, padx=5)
 
         # Output frame (sortie, / resultat)
@@ -228,9 +222,9 @@ class Software(object):
 
     def loadRandom(self):
         if self.data is None:
-            self.data = self.loader()
+            self.data = self.net.loader()
             self.data = [list(x) for x in self.data]
-        tableau = random.choice(self.data[0])[0]
+        tableau = random.choice(self.data[1])[0]
         image = Image.fromarray(tableau)
         self.updateImage(image)
 
@@ -263,11 +257,11 @@ class Software(object):
         return train_retour
 
     def eval_train(self):
-        test_data, train_data = self.loader()
+        train_data, test_data = self.net.loader()
         self.net.accuracy(train_data, '(test)')
 
     def eval_test(self):
-        test_data, train_data = self.loader()
+        train_data, test_data = self.net.loader()
         self.net.accuracy(test_data, '(test)')
 
     def closeWindow(self):
@@ -281,13 +275,13 @@ class Software(object):
 # test = Software(network=network.Network(layers=[Maxpooling((64, 64, 3), 2), Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (5 * 29 * 29, 1)),
 #            Dense(29*29* 5, 512, sigmoid), Dense(512, 164, sigmoid)]), loader=pano_loader_small)
 
-
-# test = Software(
-#   network=network.Network(layers=[Convolution((64, 64, 3), 4, 5, sigmoid), Reshape((61, 61, 5), (5 * 61 * 61, 1)),
-#                                  Dense(61 * 61 * 5, 164, sigmoid)]),
-# loader=pano_loader_medium)
+"""
+test = Software(
+   network=network.Network(layers=[Convolution((64, 64, 3), 4, 5, sigmoid), Reshape((61, 61, 5), (5 * 61 * 61, 1)),
+                                  Dense(61 * 61 * 5, 164, sigmoid)]),
+ loader=pano_loader_medium_32)
+"""
 
 test = Software(
-    network=network.Network(layers=[Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (29 * 29 * 5, 1)),
-                                    Dense(29 * 29 * 5, 164, sigmoid)]),
-    loader=pano_loader_32)
+    network=network.Network(loader=pano_loader_grey, layers=[Convolution((32, 32, 1), 4, 5, sigmoid), Reshape((29, 29, 1), (29 * 29 * 1, 1)),
+                                    Dense(29 * 29 * 1, 43, sigmoid)]))
