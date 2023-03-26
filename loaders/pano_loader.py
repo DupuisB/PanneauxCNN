@@ -1,10 +1,4 @@
 import pickle
-import random
-import time
-import numpy as np
-from PIL import Image
-import os
-
 
 def pano_loader_hidden(x):
     print('loading data')

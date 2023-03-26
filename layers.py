@@ -128,7 +128,6 @@ class Reshape(Layer):
 
 class Softmax(Layer):
     """Normalise pour avoir somme des sorties = 1"""
-
     def __init__(self):
         pass
 
@@ -137,14 +136,17 @@ class Softmax(Layer):
         self.sortie = expo / np.sum(expo)
         return self.sortie
 
-    def backpropagation(self, grad_sortie, eta):
-        return grad_sortie
+    def backpropagation(self, eta, nabla_sortie):
+        jacobian = np.diag(self.sortie.flatten()) - np.outer(self.sortie, self.sortie)
+        nabla_entree = jacobian @ nabla_sortie
+        return nabla_entree
 
     def name(self):
         return "Softmax"
 
 
-class Maxpooling():
+
+class Maxpooling(Layer):
     """filtre carre, cote*cote, aucun parametre (donc rien a update en backprop), filtre_cote divise la hauteur ET la largeur"""
 
     def __init__(self, entree_dim, filtre_cote):
@@ -184,16 +186,22 @@ class Maxpooling():
 
 
 class Greyed(Layer):
-    """Seulement en premiere couche ! (pas le bon gradient)"""
-
-    def __init__(self):
-        pass
+    """Convertit l'image en niveaux de gris"""
+    def __init__(self, first = True):
+        self.rgb_weights = np.array([0.2989, 0.5870, 0.1140])
+        self.first = first
 
     def feedforward(self, entree):
-        return (entree[..., :3] @ [0.2989, 0.5870, 0.1140])[..., None]  # [..., None] pour le format la dim manquante
+        self.entree = entree
+        return (entree[..., :3] @ self.rgb_weights)[..., None]  # [..., None] pour ajouter la dimension manquante
 
-    def backpropagation(self, grad_sortie, eta):
-        return grad_sortie
+    def backpropagation(self, nabla_sortie, eta):
+        if self.first:
+            return nabla_sortie
+        nabla_entree = np.zeros_like(self.entree)
+        nabla_entree[..., :3] = (nabla_sortie[..., 0, None] @ self.rgb_weights[None, :])
+        return nabla_entree
 
     def name(self):
         return "Greyed"
+

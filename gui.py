@@ -1,32 +1,35 @@
 import random
 
+import threading
 import network
 from loaders.mnist_loader import *
 from loaders.pano_loader import *
 from utils.activation_functions import *
 from layers import *
 from utils.cost_functions import *
+from utils.classes import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog as fd
 from PIL import ImageTk, Image
 
+convert = {'Quadratique': QuadraticCost, 'Quasratique2': QuadraticCost2, 'Cross-entropy': CrossEntropyCost}
+convert_inv = {QuadraticCost: 'Quadratique', QuadraticCost2: 'Quadratique2', CrossEntropyCost: 'Cross-entropy'}
+
 
 class Software(object):
 
-    def __init__(self, network, background='#FFEFDB', size='1180x680', windows_title='CNN - Dupuis Benjamin'):
+    def __init__(self, network, background='#FFEFDB', windows_title='CNN - Dupuis Benjamin'):
         self.net = network
         self.data = None
-
         self.title = windows_title
         self.back = background
-        self.size = size
         self.font = ('arial', 11, 'normal')
 
         self.root = tk.Tk()
 
-        self.root.geometry(self.size)
+        self.root.state('zoomed')
         self.root.configure(background=self.back)
         self.root.title(self.title)
         self.root['padx'] = 10
@@ -46,8 +49,8 @@ class Software(object):
 
         tk.Label(self.networkFrame, text="Fonction Cout", font=self.font, bg=self.back).grid(row=2, column=1,
                                                                                              padx=10, pady=10)
-        self.cost_func = ttk.Combobox(self.networkFrame, values=['Quadratique', 'Cross-entropy'])
-        self.cost_func.insert(0, 'Quadratique')
+        self.cost_func = ttk.Combobox(self.networkFrame, values=list(convert.keys()))
+        self.cost_func.insert(0, convert_inv[self.net.cost])
         self.cost_func.grid(row=2, column=2, padx=10, pady=10)
 
         tk.Label(self.networkFrame, text="Data Loader", font=self.font, bg=self.back).grid(row=3, column=1, padx=10,
@@ -71,10 +74,10 @@ class Software(object):
         # Instructions
         self.text = tk.LabelFrame(self.root, text="Instructions", relief=tk.RIDGE, bg=self.back)
         self.text.grid(row=2, column=1)
-        tk.Label(self.text, text="Couches:\n\n"
-                                 "Convolution, Dense, Reshape, Softmax\n\n"
-                                 "", font=self.font, bg=self.back).grid(row=4, column=1,
-                                                                        pady=10, padx=10)
+        tk.Label(self.text, text="Couches:\nConvolution, Dense, Reshape, Maxpooling, Softmax\n\n"
+                                 "A modifier:\n2 images, graph, truc a droite pcq vide\n\n"
+                                 "Reseaux dispo:\ngrey80, ...", font=self.font, bg=self.back).grid(row=4, column=1,
+                                                                                                   pady=10, padx=10)
 
         # Settings frame (parametres d'entrainement)
         self.settingsFrame = tk.LabelFrame(self.root, text="Paramètres entrainement", relief=tk.RIDGE, bg=self.back)
@@ -129,7 +132,6 @@ class Software(object):
                                           command=self.eval_test)
         self.eval_test_button.grid(row=5, column=1, padx=10, pady=10)
 
-
         # Image frame
         self.imageFrame = tk.LabelFrame(self.root, text="Image", relief=tk.RIDGE, bg=self.back)
         self.imageFrame.grid(row=1, column=3, padx=5)
@@ -150,6 +152,8 @@ class Software(object):
         self.loadImage = tk.Button(self.imageFrame, text='Load Image', bg=self.back, font=self.font,
                                    command=self.getImage)
         self.loadImage.grid(row=3, column=1, padx=10, pady=10)
+
+        self.imageLabel = None  # Initialisation pour eviter crash
 
         self.randomImage = tk.Button(self.imageFrame, text='Load random', bg=self.back, font=self.font,
                                      command=self.loadRandom)
@@ -187,7 +191,6 @@ class Software(object):
         return eval(self.loaderTK.get())
 
     def getCost(self):
-        convert = {'Quadratique': QuadraticCost, 'Cross-entropy': CrossEntropyCost}
         userInput = self.cost_func.get()
         return convert[userInput]
 
@@ -206,11 +209,11 @@ class Software(object):
         return float(self.eta.get())
 
     def getMonitoring(self):
-        return self.train_acc, self.eval_acc
+        return self.train_acc.get(), self.eval_acc.get()
 
     def updateImage(self, image):
         self.image = image
-        displayReady = np.squeeze(255*image).astype(np.uint8)
+        displayReady = np.squeeze(255 * image).astype(np.uint8)
         self.imageDisplayed = Image.fromarray(displayReady)
         self.imgDisplayed = ImageTk.PhotoImage(image=self.imageDisplayed.resize((224, 224)))
         self.imageTK.configure(image=self.imgDisplayed)
@@ -221,21 +224,25 @@ class Software(object):
         )
         path = fd.askopenfilename(filetypes=filetypes)
         self.updateImage(Image.open(path))
+        self.imageLabel = None
 
     def loadRandom(self):
         if self.data is None:
             self.data = self.getLoader()()[0]
-        img = self.data[np.random.choice(self.data.shape[0])][:,:,:,0]
-        self.updateImage(img)
+        img = self.data[np.random.choice(self.data.shape[0])]
+        self.imageLabel = img[0, 0, 0, 0]
+        self.updateImage(img[:, :, :, 0])
 
     def feedforward(self):
-        print('ff...')
         ff = self.net.feedforwardClasse(np.asarray(self.image))
-        self.log(f'Probable: {ff}')
-        self.output['text'] = f'Prévision: \n{ff}'
+        self.log(f'P:{ff}')
+        if self.imageLabel is not None:
+            self.output['text'] = f'Prévision:\n{ff}\n\nVrai:\n{classes_fr()[self.imageLabel]}'
+        else:
+            self.output['text'] = f'Prévision:\n{ff}'
 
     def create(self):
-        self.net = network.Network(layers=self.getNetwork(), cost=self.getCost())
+        self.net = network.Network(layers=self.getNetwork(), cost=self.getCost(), loader=self.getLoader())
         self.log('Network created')
 
     def save(self):
@@ -248,12 +255,13 @@ class Software(object):
         self.networkTK.delete("0.0", tk.END)
 
         for layer in self.net.layers:
-            self.networkTK.insert(tk.END, '\n' + layer.name())
+            self.networkTK.insert(tk.END, layer.name() + '\n')
 
     def train(self):
-        train_retour = self.net.train(loader=self.getLoader(), epochs=self.getEpochs(),
+        m = self.getMonitoring()
+        train_retour = self.net.train(epochs=self.getEpochs(),
                                       mini_batch_size=self.getMiniSize(), eta=self.getEta(),
-                                      train_accuracy=self.getMonitoring()[0], test_accuracy=self.getMonitoring()[1])
+                                      train_accuracy=m[0], test_accuracy=m[1])
         return train_retour
 
     def eval_train(self):
@@ -268,20 +276,8 @@ class Software(object):
         self.root.destroy()
 
 
-# test = Software(network=network.Network(
-#    layers=[Maxpooling((64, 64, 3), 16), Convolution((4, 4, 3), 3, 5, sigmoid), Reshape((2, 2, 5), (2*2*5, 1)), Dense(20, 164, sigmoid)]),
-#    loader=pano_loader)
-
-# test = Software(network=network.Network(layers=[Maxpooling((64, 64, 3), 2), Convolution((32, 32, 3), 4, 5, sigmoid), Reshape((29, 29, 5), (5 * 29 * 29, 1)),
-#            Dense(29*29* 5, 512, sigmoid), Dense(512, 164, sigmoid)]), loader=pano_loader_small)
-
-"""
-test = Software(
-   network=network.Network(layers=[Convolution((64, 64, 3), 4, 5, sigmoid), Reshape((61, 61, 5), (5 * 61 * 61, 1)),
-                                  Dense(61 * 61 * 5, 164, sigmoid)]),
- loader=pano_loader_medium_32)
-"""
 if __name__ == '__main__':
     test = Software(network=network.Network(loader=pano_loader_grey,
-                                layers=[Convolution((32, 32, 1), 4, 5, sigmoid), Reshape((29, 29, 1), (29 * 29 * 1, 1)),
-                                        Dense(29 * 29 * 1, 43, sigmoid)]))
+                                            layers=[Convolution((32, 32, 1), 4, 5, sigmoid),
+                                                    Reshape((29, 29, 5), (29 * 29 * 5, 1)),
+                                                    Dense(29 * 29 * 5, 43, sigmoid), Softmax()], cost=CrossEntropyCost))

@@ -39,7 +39,6 @@ class Network(object):
     def feedforwardClasse(self, entree):
         """
         Renvoie la classe pour un vecteur d'entree a
-        Ne marche pas
         """
         sortie = self.feedforward(entree)
         return classes_fr()[np.argmax(sortie)]
@@ -69,7 +68,7 @@ class Network(object):
 
             monitor_batch = 0  #
             for batch in batches:
-                if monitor_batch % 100 == 0:  #
+                if monitor_batch % 1000 == 0:  #
                     print(f'Batch: {monitor_batch}')  #
                 self.train_batch(batch, eta)
                 monitor_batch += 1  #
@@ -83,8 +82,8 @@ class Network(object):
 
     def train_batch(self, batch, eta):
         batch_size = len(batch[0])
-        for truc in batch:
-            image, label = truc[:, :, :, 0], int_to_vect(int(truc[0, 0, 0, 0]), self.nb_classes)
+        for entree in batch:
+            image, label = entree[:, :, :, 0], int_to_vect(int(entree[0, 0, 0, 0]), self.nb_classes)
             output = self.feedforward(image)
             nabla = self.cost.prime(output, label)
             for layer in reversed(self.layers):
@@ -101,13 +100,12 @@ class Network(object):
         print('Evaluating accuracy...')
         results = [int(np.argmax(self.feedforward(couple[:, :, :, 0])) == int(couple[0, 0, 0, 0])) for couple in data]
         juste, total = sum(results), len(results)
-        # print(results)
         print(f"Accuracy: {juste}/{total} ou {juste / total:.4%} {add_str}")
         return juste, total
 
     def save(self, nom):
         """"
-        Sauvegardes sous ..\network\filename
+        Sauvegardes sous ../network/filename
         """
         with open('./networks/' + nom, "wb") as f:
             pickle.dump(self, f)
@@ -129,7 +127,7 @@ def load(nom):
 ####Fonctions randoms
 def int_to_vect(j, size):
     """
-    vecteur size*1, 1.0 si l = j, 0 sinon
+    delta i,j dans \mathbb{R}^n
     """
     e = np.zeros((size, 1))
     e[j] = 1.0
