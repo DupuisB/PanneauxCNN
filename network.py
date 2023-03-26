@@ -8,6 +8,7 @@ from utils.activation_functions import *
 from utils.cost_functions import *
 from layers import *
 import numpy as np
+from utils.classes import *
 
 
 # Main class
@@ -57,7 +58,7 @@ class Network(object):
         for epoch in range(epochs):
 
             # train, test = loader()
-            n_train = len(train[0])
+            n_train = len(train)
             print(f'Epoch {epoch + 1} started...')
 
             np.random.shuffle(train)
@@ -83,7 +84,7 @@ class Network(object):
     def train_batch(self, batch, eta):
         batch_size = len(batch[0])
         for truc in batch:
-            image, label = truc[:, :, :, 0], int_to_vect(truc[0, 0, 0, 0], self.nb_classes)
+            image, label = truc[:, :, :, 0], int_to_vect(int(truc[0, 0, 0, 0]), self.nb_classes)
             output = self.feedforward(image)
             nabla = self.cost.prime(output, label)
             for layer in reversed(self.layers):

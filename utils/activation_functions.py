@@ -19,6 +19,14 @@ class tanh(activations):
     def prime(z):
         return (1-np.tanh(z)**2)/2
 
+class ReLU(activations):
+    @staticmethod
+    def fn(z):
+        return np.maximum(0, z)
+    @staticmethod
+    def prime(z):
+        return np.where(z > 0, 1, 0)
+
 class identity(activations):
     @staticmethod
     def fn(z):

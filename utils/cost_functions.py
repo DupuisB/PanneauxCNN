@@ -12,7 +12,7 @@ class QuadraticCost2(Cost):
 
     @staticmethod
     def prime(a, y):
-        return 2 * (a - y) / np.size(a)
+        return 2 * (a - y) / np.size(y)
 
 class QuadraticCost(Cost):
     @staticmethod
@@ -23,16 +23,12 @@ class QuadraticCost(Cost):
         return np.linalg.norm(a - y) #(a - y, 'norm name')
 
     @staticmethod
-    def delta(z, a, y, fn):
-        """Return the error delta from the output layer."""
-        return (a - y) * fn.prime(z)
-
-    @staticmethod
     def prime(a, y):
         return 2 * (a - y) / np.size(y)
 
 class CrossEntropyCost(Cost):
-    def fn(self, a, y):
+    @staticmethod
+    def fn(a, y):
         """Return the cost associated with an output ``a`` and desired output
         ``y``.  Note that np.nan_to_num is used to ensure numerical
         stability.  In particular, if both ``a`` and ``y`` have a 1.0
@@ -43,10 +39,8 @@ class CrossEntropyCost(Cost):
         """
         return np.sum(np.nan_to_num(-y * np.log(a) - (1 - y) * np.log(1 - a)))
 
-    def delta(self, z, a, y, fn):
-        """Return the error delta from the output layer.  Note that the
-        parameter ``z`` is not used by the method.  It is included in
-        the method's parameters in order to make the interface
-        consistent with the delta method for other cost classes.
-        """
-        return (a - y)
+    @staticmethod
+    def prime(a, y):
+        a = np.clip(a, 1e-7, 1 - 1e-7)
+        y = np.clip(y, 1e-7, 1 - 1e-7)
+        return ((1 - y) / (1 - a) - y / a) / np.size(y)

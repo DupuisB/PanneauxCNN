@@ -210,7 +210,9 @@ class Software(object):
 
     def updateImage(self, image):
         self.image = image
-        self.imgDisplayed = ImageTk.PhotoImage(image=self.image.resize((224, 224)))
+        displayReady = np.squeeze(255*image).astype(np.uint8)
+        self.imageDisplayed = Image.fromarray(displayReady)
+        self.imgDisplayed = ImageTk.PhotoImage(image=self.imageDisplayed.resize((224, 224)))
         self.imageTK.configure(image=self.imgDisplayed)
 
     def getImage(self):
@@ -222,11 +224,9 @@ class Software(object):
 
     def loadRandom(self):
         if self.data is None:
-            self.data = self.net.loader()
-            self.data = [list(x) for x in self.data]
-        tableau = random.choice(self.data[1])[0]
-        image = Image.fromarray(tableau)
-        self.updateImage(image)
+            self.data = self.getLoader()()[0]
+        img = self.data[np.random.choice(self.data.shape[0])][:,:,:,0]
+        self.updateImage(img)
 
     def feedforward(self):
         print('ff...')
@@ -281,7 +281,7 @@ test = Software(
                                   Dense(61 * 61 * 5, 164, sigmoid)]),
  loader=pano_loader_medium_32)
 """
-
-test = Software(
-    network=network.Network(loader=pano_loader_grey, layers=[Convolution((32, 32, 1), 4, 5, sigmoid), Reshape((29, 29, 1), (29 * 29 * 1, 1)),
-                                    Dense(29 * 29 * 1, 43, sigmoid)]))
+if __name__ == '__main__':
+    test = Software(network=network.Network(loader=pano_loader_grey,
+                                layers=[Convolution((32, 32, 1), 4, 5, sigmoid), Reshape((29, 29, 1), (29 * 29 * 1, 1)),
+                                        Dense(29 * 29 * 1, 43, sigmoid)]))
