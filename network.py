@@ -26,6 +26,7 @@ class Network(object):
         self.num_layers = len(layers)
         self.cost = cost
         self.activation = activation_func
+        self.monitor = ([],[])
 
     def feedforward(self, entree):
         """
@@ -48,11 +49,10 @@ class Network(object):
               mini_batch_size=20):
 
         train, test = self.loader()
-        monitor = ([], [])
         start = time.time()
 
-        if train_accuracy: monitor[0].append(self.accuracy(train, '(train)'))
-        if test_accuracy: monitor[1].append(self.accuracy(test, '(test)'))
+        if train_accuracy: self.monitor[0].append(self.accuracy(train, '(train)')[0])
+        if test_accuracy: self.monitor[1].append(self.accuracy(test, '(test)')[0])
 
         for epoch in range(epochs):
 
@@ -75,8 +75,8 @@ class Network(object):
             print(f"\nEntrainement epoch {epoch + 1} fini")
             print(f"Only required {time.time() - start:.2f}s")
 
-            if train_accuracy: monitor[0].append(self.accuracy(train, '(train)'))
-            if test_accuracy: monitor[1].append(self.accuracy(test, '(test)'))
+            if train_accuracy: self.monitor[0].append(self.accuracy(train, '(train)')[0])
+            if test_accuracy: self.monitor[1].append(self.accuracy(test, '(test)')[0])
 
         return train_accuracy, test_accuracy
 

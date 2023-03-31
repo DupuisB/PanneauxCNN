@@ -25,6 +25,7 @@ class QuadraticCost(Cost):
         return 2 * (a - y) / np.size(y)
 
 class CrossEntropyCost(Cost):
+    """Mettre softmax en dernier"""
     @staticmethod
     def fn(a, y):
         """
