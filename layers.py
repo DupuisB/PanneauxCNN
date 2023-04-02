@@ -54,7 +54,7 @@ class Dense(Layer):
 
 
 class Convolution(Layer):
-
+    """stride = 1, padding = 0, pas de pooling"""
     def __init__(self, img_dim, kernel_cote, sortie_prof, func):
         self.func = func
         self.entree_dims = img_dim

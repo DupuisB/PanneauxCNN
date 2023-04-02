@@ -1,36 +1,28 @@
-import json
-import random
-import sys
-import time
+import numpy as np
 import pickle
 
+from layers import *
+from utils.classes import *
 from utils.activation_functions import *
 from utils.cost_functions import *
-from layers import *
-import numpy as np
-from utils.classes import *
 
-
-# Main class
 class Network(object):
 
-    def __init__(self, loader, layers: list, nb_classes=43, cost=QuadraticCost2, activation_func=tanh):
+    def __init__(self, loader, layers: list, nb_classes=43, cost_function=QuadraticCost2):
         """
-            layers = [Layer1, Layer2, ...],
-            cost = fonction cout a utiliser,
-            activation_func = fonction sortie neurone
+        :param layers: [Layer1, Layer2, ...]
         """
         self.layers = layers
         self.loader = loader
         self.nb_classes = nb_classes
         self.num_layers = len(layers)
-        self.cost = cost
-        self.activation = activation_func
+        self.cost = cost_function
         self.monitor = ([],[])
 
     def feedforward(self, entree):
         """
-        Renvoie la sortie pour un vecteur d'entree a
+        Renvoie le vecteur sortie pour un vecteur d'entree entree
+        :return: np.array a 1 dimension
         """
         sortie = entree
         for layer in self.layers:
@@ -40,6 +32,7 @@ class Network(object):
     def feedforwardClasse(self, entree):
         """
         Renvoie la classe pour un vecteur d'entree a
+        :return: string
         """
         sortie = self.feedforward(entree)
         return classes_fr()[np.argmax(sortie)]
@@ -47,6 +40,10 @@ class Network(object):
     def train(self, epochs=1, eta=2,
               test_accuracy=False, train_accuracy=False,
               mini_batch_size=20):
+        """
+        Entraine et retourne les evaluations si demandées
+        :return: (train_accuracy, test_accuracy) (listes d'entiers a une dimension)
+        """
 
         train, test = self.loader()
         start = time.time()
@@ -83,7 +80,7 @@ class Network(object):
     def train_batch(self, batch, eta):
         batch_size = len(batch[0])
         for entree in batch:
-            image, label = entree[:, :, :, 0], int_to_vect(int(entree[0, 0, 0, 0]), self.nb_classes)
+            image, label = entree[:, :, :, 0], delta_vecteur(int(entree[0, 0, 0, 0]), self.nb_classes)
             output = self.feedforward(image)
             nabla = self.cost.prime(output, label)
             for layer in reversed(self.layers):
@@ -95,27 +92,30 @@ class Network(object):
 
     def accuracy(self, data, add_str=''):
         """
-        renvoie (nombre juste, nombre total), data deja decompacte
+        :param data: np.array de taille (nb_images, image, etiquette)
+        :return: (nb_juste:int, nb_total:int)
         """
         print('Evaluating accuracy...')
-        results = [int(np.argmax(self.feedforward(couple[:, :, :, 0])) == int(couple[0, 0, 0, 0])) for couple in data]
-        juste, total = sum(results), len(results)
+        juste = 0
+        for couple in data:
+            juste += int(np.argmax(self.feedforward(couple[:, :, :, 0])) == int(couple[0, 0, 0, 0]))
+        total = len(data[0])
         print(f"Accuracy: {juste}/{total} ou {juste / total:.4%} {add_str}")
         return juste, total
 
     def save(self, nom):
         """"
-        Sauvegardes sous ../network/filename
+        Sauvegarde le reseaux sous ../network/{nom}
         """
         with open('./networks/' + nom, "wb") as f:
             pickle.dump(self, f)
             f.close()
-        print(f'network {nom} saved')
+        print(f'Network {nom} saved')
 
 
 def load(nom):
     """
-    Charge un reseau
+    Charge le reseau {nom}
     """
     with open("./networks/" + nom, "rb") as f:
         net = pickle.load(f)
@@ -124,10 +124,10 @@ def load(nom):
         return net
 
 
-####Fonctions randoms
-def int_to_vect(j, size):
+#Fonction supplementaire
+def delta_vecteur(j, size):
     """
-    delta i,j dans \mathbb{R}^n
+    :return: np.array de taille (size, 1) avec un 1 a la position j, 0 partout ailleurs
     """
     e = np.zeros((size, 1))
     e[j] = 1.0

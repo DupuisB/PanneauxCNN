@@ -280,4 +280,4 @@ if __name__ == '__main__':
     test = Software(network=network.Network(loader=pano_loader_grey,
                                             layers=[Convolution((32, 32, 1), 4, 5, sigmoid),
                                                     Reshape((29, 29, 5), (29 * 29 * 5, 1)),
-                                                    Dense(29 * 29 * 5, 43, sigmoid), Softmax()], cost=CrossEntropyCost))
+                                                    Dense(29 * 29 * 5, 43, sigmoid), Softmax()]))
