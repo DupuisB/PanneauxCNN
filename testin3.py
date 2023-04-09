@@ -1,28 +1,16 @@
-import csv
+import random
+import time
+
 import numpy as np
+from PIL import Image, ImageOps
+import os
+import matplotlib.pyplot as plt
+import cv2 as cv
 
-def count_original():
-    with open('data/train.csv', 'r') as f:
-        reader = csv.reader(f)
-        data = list(reader)
+path = "C:\\Users\\benyo\\PycharmProjects\\PanneauxCNN\\data\\EuDataset\\Testing\\001\\B_02294_00000.ppm"
+path2 = "C:\\Users\\benyo\\PycharmProjects\\PanneauxCNN\\data\\EuDataset\\Classes"
 
-    array = np.array(data)
-    print(array[1:,6])
-
-    def count_classes(array):
-        """
-        renvoie un dictionnaire avec les classes et leur nombre d'occurence
-        """
-        print('Evaluating classes...')
-        classes = {}
-        for couple in array:
-            label = int(couple[6])
-            if label in classes:
-                classes[label] += 1
-            else:
-                classes[label] = 1
-        print('Done!')
-        return classes
-
-    labels = count_classes(array[1:])
-    print(labels)
+array = np.zeros((16,14,13,12))
+print(array.shape)
+array = np.delete(array, 0, 0)
+print(array.shape)

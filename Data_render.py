@@ -7,7 +7,6 @@ from time import sleep
 import csv
 from loaders.pano_loader import *
 
-data = pano_loader_grey()
 
 def classes(data):
     """
@@ -57,8 +56,18 @@ def graph_labels(labels, save = False, show = True, path = './images/', name = '
     if show:
         plt.show()
 
+#data = pano_loader_grey()
+
 #Labels avant homogeneisation
 #graph_labels(classes_original(), show = False, save = True, name = 'labels_originaux', titre = 'Images par classes avant homogénéisation')
 
 #Labels apres homogeneisation
 #graph_labels(classes(data[0]), show = False, save = True, name = 'labels_finaux', titre = 'Images par classes après homogénéisation')
+
+#Labels avant homogeneisation EuDataset
+#with open("C:\\Users\\benyo\\Desktop\\train.pickle", 'rb') as f:
+#    data = pickle.load(f)
+#graph_labels(classes(data), show = True, save = False, name = 'labels_originaux_EuDataset', titre = 'Images par classes avant homogénéisation')
+
+#c = classes(data[0])
+#print(c)
