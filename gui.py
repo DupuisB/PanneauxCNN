@@ -230,7 +230,7 @@ class Software(object):
         if self.data is None:
             self.data = self.getLoader()()[0]
         img = self.data[np.random.choice(self.data.shape[0])]
-        self.imageLabel = img[0, 0, 0, 0]
+        self.imageLabel = int(img[0, 0, 0, 0])
         self.updateImage(img[:, :, :, 0])
 
     def feedforward(self):
@@ -277,7 +277,7 @@ class Software(object):
 
 
 if __name__ == '__main__':
-    test = Software(network=network.Network(loader=pano_loader_grey,
+    test = Software(network=network.Network(loader=EUD_loader_grey,
                                             layers=[Convolution((32, 32, 1), 4, 5, sigmoid),
                                                     Reshape((29, 29, 5), (29 * 29 * 5, 1)),
                                                     Dense(29 * 29 * 5, 43, sigmoid), Softmax()]))

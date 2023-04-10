@@ -6,6 +6,7 @@ import pickle
 from time import sleep
 import csv
 from loaders.pano_loader import *
+from PIL import Image
 
 
 def classes(data):
@@ -69,5 +70,7 @@ def graph_labels(labels, save = False, show = True, path = './images/', name = '
 #    data = pickle.load(f)
 #graph_labels(classes(data), show = True, save = False, name = 'labels_originaux_EuDataset', titre = 'Images par classes avant homogénéisation')
 
-#c = classes(data[0])
-#print(c)
+train, test = EUD_loader_RGB()
+#graph_labels(classes(train), show = True, save = False, name = 'labels_finaux_EuDataset', titre = 'Images par classes après homogénéisation')
+Image.fromarray(train[121000, :, :, :, 0].astype(np.uint8)).show()
+print(train[121000, 0, 0, 0, 0])

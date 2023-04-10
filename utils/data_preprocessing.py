@@ -2,8 +2,10 @@ import os
 
 import numpy as np
 import pickle
-from PIL import Image, ImageOps
-import classes as cl
+from PIL import Image, ImageOps, ImageEnhance
+import utils.classes as cl
+import random
+from loaders.pano_loader import *
 
 data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 base_dir = os.path.join(data_dir, 'EuDataset')
@@ -32,12 +34,11 @@ def create_data(dir):
     return np.array(data)
 
 
-def update_data(data: np.array):
+def update_noir_et_blanc(data: np.array):
     """Transforme un jeu de donnee
-    Remarque: images en noir et blanc, equalization a faire avant
-    :return: np.array transformee (noir et blanc, normalisé, ...)
+    Remarque: Transforme un jeu de donnee de la forme (nb_images, 32, 32, 3, 1)
+    :return: np.array transformee (noir et blanc, LHE)
     """
-    print(data.shape)
 
     # Creer un nouveau tableau de la forme adaptée
     new_data = np.empty((len(data), 32, 32, 1, 1))
@@ -50,15 +51,14 @@ def update_data(data: np.array):
         # Noir et blanc
         img = img.convert('L')
 
-        # Normalisation (Calcul plus rapide)
+        # LHE
+        img = ImageOps.equalize(img)
+
+        # Normalisation (Calculs plus rapide)
         img = np.asarray(img)
         img = img / 255
         img = np.expand_dims(img, axis=-1)
         img = np.expand_dims(img, axis=-1)
-
-        # LHE
-        img = ImageOps.equalize(img)
-
 
         img[0, 0, 0, 0] = label
 
@@ -66,20 +66,78 @@ def update_data(data: np.array):
 
     return new_data
 
-def rotate(image: Image.Image):
+def rdm_rotation(image: Image.Image):
     """
     :param image: PIL.Image
-    :return: PIL.Image avec rotation aléatoire dans [-35, -5] U [5, 35]
+    :return: PIL.Image avec rotation aléatoire dans [-10, 10]
     """
-    valeurs = [i for i in range(-36, -10)] + [i for i in range(5, 36)]
+    valeurs = [i for i in range(-10, 11)] # En degrés
     return image.rotate(np.random.choice(valeurs))
 
-def flip(image: Image.Image):
+def rdm_brightness(image: Image.Image):
+    """
+    :param image: PIL.Image
+    :return: PIL.Image avec luminosite augmentee (entre *0.5 et *1.5)
+    """
+    amount = np.random.uniform(0.6, 1.4)
+    return ImageEnhance.Brightness(image).enhance(amount)
+
+def rdm_flip(image: Image.Image):
     """
     :param image: PIL.Image
     :return: PIL.Image, symetrie verticale de l'entree
     """
+    if random.random() < 0.5:  # Plus rapide que bool(random.getrandbits(1)) et que random.choice([True, False])
+        return image
     return ImageOps.mirror(image)
+
+def rdm_color(image: Image.Image):
+    """
+    :param image: PIL.Image
+    :return: PIL.Image avec couleur augmentee (entre *0.8 et *1.2)
+    """
+    amount = np.random.uniform(0.7, 1.3)
+    return ImageEnhance.Color(image).enhance(amount)
+
+def rdm_contrast(image: Image.Image):
+    """
+    :param image: PIL.Image
+    :return: PIL.Image avec contraste augmentee (entre *0.8 et *1.2)
+    """
+    amount = np.random.uniform(0.7, 1.3)
+    return ImageEnhance.Contrast(image).enhance(amount)
+
+def rdm_sharpness(image: Image.Image):
+    """
+    :param image: PIL.Image
+    :return: PIL.Image avec nettete augmentee (entre *0.8 et *1.2)
+    """
+    amount = np.random.uniform(0.7, 1.3)
+    return ImageEnhance.Sharpness(image).enhance(amount)
+
+def rdm_zoom(image: Image.Image):
+    """
+    :param image: PIL.Image
+    :return: PIL.Image avec zoom aleatoire (entre 0.8 et 1.2)
+    """
+    f = np.random.uniform(1, 1.2)
+    # Calculate new dimensions
+    width, height = image.size
+    new_width = int(width * f)
+    new_height = int(height * f)
+
+    # Resize the image
+    resized_image = image.resize((new_width, new_height))
+
+    # Calculate crop box dimensions
+    left = (resized_image.width - width) // 2
+    top = (resized_image.height - height) // 2
+    right = (resized_image.width + width) // 2
+    bottom = (resized_image.height + height) // 2
+
+    # Crop the image
+    return resized_image.crop((left, top, right, bottom))
+
 
 def salt(image: Image.Image, amount=0.05):
     """Salt and Pepper noise (Chaque pixel a une proba d'etre detruit et est remplacer par du blanc ou du noir (1/2))
@@ -89,7 +147,6 @@ def salt(image: Image.Image, amount=0.05):
     image = np.asarray(image)
     modified = np.copy(image)
     shape = image.shape
-    print(shape)
     nb_pixel = np.prod(shape)
     for i in range(round(amount * nb_pixel)):
         x = np.random.randint(0, shape[0])
@@ -100,15 +157,13 @@ def salt(image: Image.Image, amount=0.05):
 
 def update_classes(data: np.array, dico):
     """Met a jour les labels avec un dico = {ancien_num, nouveau_num}
-    :return: Rien (Edite en place)
-    Remarque: La complexité est infame, mais on ne fait ca qu'une fois
+    :return: Nouvelles donnees)
     """
     a_supprimer = 0
     for i in range(len(data)):
         label = int(data[i,0,0,0,0])
         if label not in dico.keys():
             a_supprimer += 1
-
     new_data = np.empty((len(data) - a_supprimer, 32, 32, 3, 1))
     decalage = 0
 
@@ -119,6 +174,7 @@ def update_classes(data: np.array, dico):
             new_data[i - decalage, 0, 0, 0, 0] = dico[label]
         else:
             decalage += 1
+    print(f'{a_supprimer} images supprimées.')
     return new_data
 
 def save(train, test, name):
@@ -136,29 +192,76 @@ def save(train, test, name):
         pickle.dump(dico, f)
     print('Data saved !')
 
+def augmente_classe(data: np.array, label: int, nb: int):
+    """Augmente le nombre d'images d'une classe, applique egalement LHE
+    :param data: np.array Donnees, format classique
+    :param label: int
+    :param nb: int Nombre d'images voulues
+    :return: np.array Donnees augmentees (Cette classe est augmentee)
+    """
+    images = [i for i in range(len(data)) if data[i, 0, 0, 0, 0] == label]
+
+    if len(images) > nb:
+        #Retourne exactement nb images
+        return np.array([data[i] for i in np.random.choice(images, nb)])
+
+    new_data = np.zeros((nb, 32, 32, 3, 1))
+
+    for i in range(nb):
+        x = np.random.choice(images)
+        img = Image.fromarray(data[x, :, :, :, 0].astype(np.uint8))
+
+        #Brightness
+        img = rdm_brightness(img)
+        #Color
+        img = rdm_color(img)
+        #Zoom
+        img = rdm_zoom(img)
+        #Contrast
+        img = rdm_contrast(img)
+        #Sharpness
+        img = rdm_sharpness(img)
+
+        #Remet le label
+        img = np.array(img)
+        img = np.expand_dims(img, axis=-1)
+        img[0, 0, 0, 0] = data[x, 0, 0, 0, 0]
+
+        new_data[i] = img
+    return new_data.astype(np.uint8)
+
+def save_useless_now():
+    with open("C:\\Users\\benyo\\Desktop\\train.pickle", 'rb') as f:
+        train = pickle.load(f)
+    with open("C:\\Users\\benyo\\Desktop\\test.pickle", 'rb') as f:
+        test = pickle.load(f)
+    save(train, test, 'EUD_RGB_ORIGINAL')
+
+    ancien_to_nouveau = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 7: 5, 8: 6, 11: 7, 12: 8, 13: 9, 16: 10, 17: 11, 18: 12, 20: 13,
+                         21: 14, 22: 15, 24: 16, 32: 17, 33: 18, 35: 19, 36: 20, 37: 21, 41: 22, 42: 23, 50: 24, 51: 25,
+                         54: 26, 55: 27, 57: 28, 59: 29, 60: 30, 61: 31, 62: 32, 63: 33, 64: 34, 66: 35, 68: 36, 70: 37,
+                         71: 38, 72: 39, 73: 40, 74: 41, 77: 42, 80: 43, 83: 44, 84: 45, 85: 46, 86: 47, 87: 48, 88: 49,
+                         90: 50, 91: 51, 93: 52, 100: 53, 105: 54, 106: 55, 109: 56, 110: 57, 112: 58, 119: 59, 139: 60,
+                         140: 61, 148: 62, 149: 63, 159: 64, 160: 65}
+
+    data = EUD_loader_RGB()
+    train = data[0]
+    test = data[1]
+    test = update_classes(test, ancien_to_nouveau)
+    train = update_classes(train, ancien_to_nouveau)
+    save(train, test, 'EUD_ORIGINAL_REDUIT')
+
+    train, test = EUD_loader_ORIGINAL_REDUIT()
+    new_train = []
+    for i in range(65):
+        print(i)
+        increased = augmente_classe(train, i, 2000)
+        new_train.append(increased)
+    new_train = np.concatenate(new_train)
+    save(new_train, test, 'EUD_RGB_AUGMENTE')
+
 if __name__ == '__main__':
-    #test = create_data(test_dir)
-    #print(test.shape)
-    #with open("C:\\Users\\benyo\\Desktop\\test.pickle", 'wb') as f:
-    #    pickle.dump(test, f)
-
-    #with open("C:\\Users\\benyo\\Desktop\\test.pickle", 'rb') as f:
-    #    test = pickle.load(f)
-    #print(test.shape)
-    #test = update_data(test)
-
-    #ancien_to_nouveau = {0: 0, 1: 1, 2: 2, 3: 3, 6: 4, 7: 5, 10: 6, 11: 7, 12: 8, 14: 9, 15: 10, 16: 11, 17: 12,
-    #                     19: 13, 20: 14, 21: 15, 22: 16, 23: 17, 24: 18, 31: 19, 32: 20, 34: 21, 35: 22, 36: 23,
-    #                     37: 24, 40: 25, 50: 26, 51: 27, 53: 28, 56: 29, 58: 30, 60: 31, 63: 32, 64: 33, 65: 34,
-    #                     66: 35, 67: 36, 68: 37, 69: 38, 70: 39, 71: 40, 73: 41, 79: 42, 80: 43, 81: 44, 82: 45,
-    #                     83: 46, 84: 47, 85: 48, 86: 49, 87: 50, 89: 51, 90: 52, 92: 53, 99: 54, 104: 55, 105: 56,
-    #                     108: 57, 118: 58, 142: 59, 145: 60, 146: 61, 148: 62, 158: 63, 160: 64}
-
-    #with open("C:\\Users\\benyo\\Desktop\\test.pickle", 'rb') as f:
-    #    test = pickle.load(f)
-    #   new_test = update_classes(test, ancien_to_nouveau)
-    #with open("C:\\Users\\benyo\\Desktop\\train.pickle", 'rb') as f:
-    #    train = pickle.load(f)
-    #    new_train = update_classes(train, ancien_to_nouveau)
-    #save(new_train, new_test, 'EUD_RGB')
-    pass
+    train, test = EUD_loader_RGB()
+    train = update_noir_et_blanc(train.astype(np.uint8))
+    test = update_noir_et_blanc(test.astype(np.uint8))
+    save(train, test, 'EUD_GREY_255_LHE')

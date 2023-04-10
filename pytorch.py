@@ -11,7 +11,7 @@ def delta_vecteur(i, n):
     vecteur[i] = 1
     return vecteur
 
-train_data, test_data = pano_loader_grey()
+train_data, test_data = EUD_loader_grey()
 
 # Convert numpy arrays to PyTorch tensors
 train_data = torch.tensor(train_data, dtype=torch.float32)
@@ -40,13 +40,15 @@ test_loader = DataLoader(test_dataset, batch_size=15, shuffle=False)
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, 4, padding=0, stride=1)
-        self.fc1 = nn.Linear(29 * 29 * 5, 512)
-        self.fc2 = nn.Linear(512, 43)
+        self.conv1 = nn.Conv2d(1, 32, 5, padding=0, stride=1)
+        self.MP1 = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(14 * 14 * 32, 512)
+        self.fc2 = nn.Linear(512, 65)
 
     def forward(self, x):
         x = F.sigmoid(self.conv1(x))
-        x = x.view(-1, 29*29*5)
+        x = self.MP1(x)
+        x = x.view(-1, 14*14*32)
         x = F.sigmoid(self.fc1(x))
         x = F.sigmoid(self.fc2(x))
         return x
@@ -55,7 +57,7 @@ model = CNN()
 
 # Define the loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=1)
+optimizer = optim.SGD(model.parameters(), lr=0.5)
 
 def eval(i, t):
     model.eval()
@@ -69,10 +71,10 @@ def eval(i, t):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     accuracy = 100 * correct / total
-    print(f"Epoch {i + 1}/{t}, Accuracy: {accuracy:.3f}%")
+    print(f"Epoch {i + 1}/{t}, Accuracy: {accuracy:.3f}% ({correct}/{total})")
 
 # Create the training loop
-num_epochs = 10
+num_epochs = 50
 print('hey')
 eval(0, num_epochs)
 for epoch in range(num_epochs):
