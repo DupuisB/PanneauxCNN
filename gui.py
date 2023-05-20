@@ -107,8 +107,11 @@ class Software(object):
         self.trainFrame = tk.LabelFrame(self.root, text="Entrainement/Evaluation", relief=tk.RIDGE, bg=self.back)
         self.trainFrame.grid(row=2, column=2)
 
-        tk.Label(self.trainFrame, text="Choix données résultat:", font=self.font,
+        tk.Label(self.trainFrame, text="Actions:", font=self.font,
                  bg=self.back).grid(row=1, column=1, padx=10, pady=10)
+
+        tk.Label(self.trainFrame, text="Graphique entraînement:", font=self.font,
+                 bg=self.back).grid(row=1, column=2, padx=10, pady=10)
 
         self.eval_acc, self.train_acc = tk.BooleanVar(), tk.BooleanVar()
 
@@ -232,10 +235,10 @@ class Software(object):
 
     def loadRandom(self):
         if self.data is None:
-            self.data = self.getLoader()()[0]
+            self.data = self.getLoader()()[1]
             #self.dataRGB = EUD_loader_RGB()[0]
-        self.ImageNum = np.random.randint(0, self.data.shape[0])
-        img = self.data[np.random.choice(self.data.shape[0])]
+        self.ImageNum = np.random.randint(0, len(self.data))
+        img = self.data[self.ImageNum]
         self.imageLabel = int(img[0, 0, 0, 0])
         self.updateImage(img[:, :, :, 0], num = True)
 
@@ -243,7 +246,7 @@ class Software(object):
         ff = self.net.feedforwardClasse(np.asarray(self.image))
         self.log(f'P:{ff}')
         if self.imageLabel is not None:
-            self.output['text'] = f'Prévision:\n{ff}\n\nVrai:\n{classes_EUD_fr()[self.imageLabel]}'
+            self.output['text'] = f'Prévision:\n{ff}\n\nVrai:\n{classes_fr()[self.imageLabel]}'
         else:
             self.output['text'] = f'Vrai résultat:\n{ff}'
 
@@ -283,7 +286,7 @@ class Software(object):
 
 
 if __name__ == '__main__':
-    test = Software(network=network.Network(loader=EUD_loader_grey, nb_classes=65, classes=classes_EUD_fr(),
+    test = Software(network=network.Network(loader=pano_loader_grey, nb_classes=43,
                                             layers=[Convolution((32, 32, 1), 4, 5, sigmoid),
                                                     Reshape((29, 29, 5), (29 * 29 * 5, 1)),
-                                                    Dense(29 * 29 * 5, 65, sigmoid), Softmax()]))
+                                                    Dense(29 * 29 * 5, 42, sigmoid), Softmax()]))

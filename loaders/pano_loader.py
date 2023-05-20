@@ -13,14 +13,14 @@ def pano_loader_hidden(x):
 def pano_loader_grey():
     """
     :return: (train: [num, haut, larg, prof, y], test: [num, haut, larg, prof, y])
-    test et train sont des numpy array de shape (nb_images, 32, 32, 1, 1)
+    train et test sont des numpy array de shape (nb_images, 32, 32, 1, 1)
     """
     return pano_loader_hidden('grey_255_LHE.pickle')
 
 def pano_loader_RGB():
     """
     :return: (train: [num, haut, larg, prof, y], test: [num, haut, larg, prof, y])
-    test et train sont des numpy array de shape (nb_images, 32, 32, 3, 1)
+    train et test sont des numpy array de shape (nb_images, 32, 32, 3, 1)
     """
     return pano_loader_hidden('255_mean.pickle')
 

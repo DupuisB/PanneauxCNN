@@ -5,10 +5,11 @@ from layers import *
 from utils.classes import *
 from utils.activation_functions import *
 from utils.cost_functions import *
+from loaders.pano_loader import *
 
 class Network(object):
 
-    def __init__(self, loader, layers: list, nb_classes=43, cost_function=DistanceEuclidienne2, classes=classes_EUD_fr()):
+    def __init__(self, loader, layers: list, nb_classes=43, cost_function=DistanceEuclidienne2, classes=classes_fr()):
         """
         :param layers: [Layer1, Layer2, ...]
         """
@@ -97,11 +98,11 @@ class Network(object):
         :return: (nb_juste:int, nb_total:int)
         """
         print('Evaluating accuracy...')
+        total = len(data)
         juste = 0
         for couple in data:
             juste += int(np.argmax(self.feedforward(couple[:, :, :, 0])) == int(couple[0, 0, 0, 0]))
-        total = len(data[0])
-        print(f"Accuracy: {juste}/{total} ou {juste / total:.4%} {add_str}")
+        print(f"Précision: {juste}/{total} ou {juste / total:.4%} {add_str}")
         return juste, total
 
     def save(self, nom):
@@ -133,3 +134,6 @@ def delta_vecteur(j, size):
     e = np.zeros((size, 1))
     e[j] = 1.0
     return e
+
+if __name__ == '__main__':
+    print('This is a module, not a program')
