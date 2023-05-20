@@ -40,15 +40,15 @@ test_loader = DataLoader(test_dataset, batch_size=15, shuffle=False)
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 5, padding=0, stride=1)
+        self.conv1 = nn.Conv2d(1, 16, 5, padding=0, stride=1)
         self.MP1 = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(14 * 14 * 32, 512)
+        self.fc1 = nn.Linear(14 * 14 * 16, 512)
         self.fc2 = nn.Linear(512, 65)
 
     def forward(self, x):
         x = F.sigmoid(self.conv1(x))
         x = self.MP1(x)
-        x = x.view(-1, 14*14*32)
+        x = x.view(-1, 14*14*16)
         x = F.sigmoid(self.fc1(x))
         x = F.sigmoid(self.fc2(x))
         return x
@@ -59,24 +59,25 @@ model = CNN()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.5)
 
-def eval(i, t):
+def eval(i, t, loader):
     model.eval()
     correct = 0
     total = 0
     with torch.no_grad():
-        for images, labels in test_loader:
+        for images, labels in loader:
             images = images.unsqueeze(1)  # Add a channel dimension
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
     accuracy = 100 * correct / total
     print(f"Epoch {i + 1}/{t}, Accuracy: {accuracy:.3f}% ({correct}/{total})")
 
 # Create the training loop
 num_epochs = 50
 print('hey')
-eval(0, num_epochs)
+eval(0, num_epochs, test_loader)
 for epoch in range(num_epochs):
     model.train()
     i = 0
@@ -90,4 +91,5 @@ for epoch in range(num_epochs):
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-    eval(epoch, num_epochs)
+    eval(epoch, num_epochs, test_loader)
+    eval(epoch, num_epochs, train_loader)

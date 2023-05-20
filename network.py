@@ -8,10 +8,11 @@ from utils.cost_functions import *
 
 class Network(object):
 
-    def __init__(self, loader, layers: list, nb_classes=43, cost_function=QuadraticCost2):
+    def __init__(self, loader, layers: list, nb_classes=43, cost_function=DistanceEuclidienne2, classes=classes_EUD_fr()):
         """
         :param layers: [Layer1, Layer2, ...]
         """
+        self.classes = classes
         self.layers = layers
         self.loader = loader
         self.nb_classes = nb_classes
@@ -35,7 +36,7 @@ class Network(object):
         :return: string
         """
         sortie = self.feedforward(entree)
-        return classes_fr()[np.argmax(sortie)]
+        return self.classes[np.argmax(sortie)]
 
     def train(self, epochs=1, eta=2,
               test_accuracy=False, train_accuracy=False,

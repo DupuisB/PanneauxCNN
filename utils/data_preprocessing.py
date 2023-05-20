@@ -45,7 +45,7 @@ def update_noir_et_blanc(data: np.array):
 
     for i in range(len(data)):
         if i % 1000 == 0: print(i)
-        img, label = data[i, :, :, :, 0], data[i, 0, 0, 0, 0]
+        img, label = data[i, :, :, :, 0] * 255, data[i, 0, 0, 0, 0]
         img = Image.fromarray(img)
 
         # Noir et blanc
@@ -71,7 +71,7 @@ def rdm_rotation(image: Image.Image):
     :param image: PIL.Image
     :return: PIL.Image avec rotation aléatoire dans [-10, 10]
     """
-    valeurs = [i for i in range(-10, 11)] # En degrés
+    valeurs = [i for i in range(-4, 4)] # En degrés
     return image.rotate(np.random.choice(valeurs))
 
 def rdm_brightness(image: Image.Image):
@@ -79,7 +79,7 @@ def rdm_brightness(image: Image.Image):
     :param image: PIL.Image
     :return: PIL.Image avec luminosite augmentee (entre *0.5 et *1.5)
     """
-    amount = np.random.uniform(0.6, 1.4)
+    amount = np.random.uniform(0.8, 1.2)
     return ImageEnhance.Brightness(image).enhance(amount)
 
 def rdm_flip(image: Image.Image):
@@ -96,7 +96,7 @@ def rdm_color(image: Image.Image):
     :param image: PIL.Image
     :return: PIL.Image avec couleur augmentee (entre *0.8 et *1.2)
     """
-    amount = np.random.uniform(0.7, 1.3)
+    amount = np.random.uniform(0.8, 1.)
     return ImageEnhance.Color(image).enhance(amount)
 
 def rdm_contrast(image: Image.Image):
@@ -104,7 +104,7 @@ def rdm_contrast(image: Image.Image):
     :param image: PIL.Image
     :return: PIL.Image avec contraste augmentee (entre *0.8 et *1.2)
     """
-    amount = np.random.uniform(0.7, 1.3)
+    amount = np.random.uniform(0.8, 1.2)
     return ImageEnhance.Contrast(image).enhance(amount)
 
 def rdm_sharpness(image: Image.Image):
@@ -120,7 +120,7 @@ def rdm_zoom(image: Image.Image):
     :param image: PIL.Image
     :return: PIL.Image avec zoom aleatoire (entre 0.8 et 1.2)
     """
-    f = np.random.uniform(1, 1.2)
+    f = np.random.uniform(1., 1.15)
     # Calculate new dimensions
     width, height = image.size
     new_width = int(width * f)
@@ -193,7 +193,7 @@ def save(train, test, name):
     print('Data saved !')
 
 def augmente_classe(data: np.array, label: int, nb: int):
-    """Augmente le nombre d'images d'une classe, applique egalement LHE
+    """Augmente le nombre d'images d'une classe, normalise a la fin
     :param data: np.array Donnees, format classique
     :param label: int
     :param nb: int Nombre d'images voulues
@@ -223,12 +223,12 @@ def augmente_classe(data: np.array, label: int, nb: int):
         img = rdm_sharpness(img)
 
         #Remet le label
-        img = np.array(img)
+        img = np.array(img) / 255.
         img = np.expand_dims(img, axis=-1)
         img[0, 0, 0, 0] = data[x, 0, 0, 0, 0]
 
         new_data[i] = img
-    return new_data.astype(np.uint8)
+    return new_data
 
 def save_useless_now():
     with open("C:\\Users\\benyo\\Desktop\\train.pickle", 'rb') as f:
@@ -260,8 +260,18 @@ def save_useless_now():
     new_train = np.concatenate(new_train)
     save(new_train, test, 'EUD_RGB_AUGMENTE')
 
-if __name__ == '__main__':
     train, test = EUD_loader_RGB()
     train = update_noir_et_blanc(train.astype(np.uint8))
     test = update_noir_et_blanc(test.astype(np.uint8))
     save(train, test, 'EUD_GREY_255_LHE')
+
+if __name__ == '__main__':
+    train, test = EUD_loader_ORIGINAL_REDUIT()
+    new_train = []
+    for i in range(65):
+        print(i)
+        increased = augmente_classe(train, i, 2000)
+        new_train.append(increased)
+    new_train = np.concatenate(new_train)
+    save(new_train, test, 'EUD_RGB_AUGMENTE')
+
