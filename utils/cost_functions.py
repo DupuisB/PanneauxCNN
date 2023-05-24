@@ -1,12 +1,15 @@
 import numpy as np
 
+
 class Cost():
     pass
+
 
 class DistanceEuclidienne2(Cost):
     """
     Renvoie le carré de la distance euclidienne entre a et y
     """
+
     @staticmethod
     def fn(a, y):
         return np.mean(np.power(y - a, 2))
@@ -15,34 +18,26 @@ class DistanceEuclidienne2(Cost):
     def prime(a, y):
         return 2 * (a - y) / np.size(y)
 
-class QuadraticCost2(Cost):
-    """
-    Renvoie le carré de la distance euclidienne entre a et y
-    """
-    @staticmethod
-    def fn(a, y):
-        return np.mean(np.power(y - a, 2))
-
-    @staticmethod
-    def prime(a, y):
-        return 2 * (a - y) / np.size(y)
 
 class DistanceEuclidienne(Cost):
     """
     Renvoie la distance euclidienne entre a et y
     """
+
     @staticmethod
     def fn(a, y):
         return np.linalg.norm(a - y)
 
     @staticmethod
     def prime(a, y):
-        return 2 * (a - y) / np.size(y)
+        return (a - y) / DistanceEuclidienne2.fn(a, y) * np.size(y)
+
 
 class EntropieCroisee(Cost):
     """
-    Mettre softmax en dernier (distribution de probas)
+    Mettre softmax en dernier (Prend une distribution de propa en entrée))
     """
+
     @staticmethod
     def fn(a, y):
         return np.sum(np.nan_to_num(-y * np.log(a) - (1 - y) * np.log(1 - a)))

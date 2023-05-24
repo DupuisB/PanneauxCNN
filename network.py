@@ -1,6 +1,4 @@
 import numpy as np
-import pickle
-
 from layers import *
 from utils.classes import *
 from utils.activation_functions import *
@@ -55,7 +53,6 @@ class Network(object):
 
         for epoch in range(epochs):
 
-            # train, test = loader()
             n_train = len(train)
             print(f'Epoch {epoch + 1} started...')
 
@@ -65,14 +62,11 @@ class Network(object):
                 train[k:k + mini_batch_size]
                 for k in range(0, n_train, mini_batch_size)]
 
-            monitor_batch = 0  #
             for batch in batches:
-                if monitor_batch % 1000 == 0:  #
-                    print(f'Batch: {monitor_batch}')  #
                 self.train_batch(batch, eta)
-                monitor_batch += 1  #
-            print(f"\nEntrainement epoch {epoch + 1} fini")
-            print(f"Only required {time.time() - start:.2f}s")
+
+            print(f"\nEntraînement: itération n°{epoch + 1} finie.")
+            print(f"Temps: {time.time() - start:.2f}s")
 
             if train_accuracy: self.monitor[0].append(self.accuracy(train, '(train)')[0])
             if test_accuracy: self.monitor[1].append(self.accuracy(test, '(test)')[0])
@@ -97,7 +91,7 @@ class Network(object):
         :param data: np.array de taille (nb_images, image, etiquette)
         :return: (nb_juste:int, nb_total:int)
         """
-        print('Evaluating accuracy...')
+        print('Evaluation précision...')
         total = len(data)
         juste = 0
         for couple in data:
@@ -126,7 +120,7 @@ def load(nom):
         return net
 
 
-#Fonction supplementaire
+#Fonction Auxiliaire
 def delta_vecteur(j, size):
     """
     :return: np.array de taille (size, 1) avec un 1 a la position j, 0 partout ailleurs
@@ -136,4 +130,4 @@ def delta_vecteur(j, size):
     return e
 
 if __name__ == '__main__':
-    print('This is a module, not a program')
+    print('Ceci est un module, pas un script.')
